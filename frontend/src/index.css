@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=DM+Sans:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --color-cream: #fbf6f0;
+  --color-sand: #eadfd3;
+  --color-blush: #f6e1dc;
+  --color-rose: #c96f7f;
+  --color-berry: #a8506a;
+  --color-sage: #aeb9a0;
+  --color-ink: #3b2a2a;
+}
+
+body { margin: 0; background: var(--color-cream); color: var(--color-ink); font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .45s ease both; }
