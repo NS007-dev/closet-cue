@@ -1,0 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;0,6..96,800;1,6..96,400&family=Cormorant+Garamond:ital,wght@0,400;1,400;1,500&family=Libre+Franklin:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Bodoni Moda', 'Didot', serif;
+  --font-deck: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Libre Franklin', system-ui, sans-serif;
+  --color-paper: #f3efe6;
+  --color-ink: #111111;
+  --color-oxblood: #7a1f2b;
+  --color-rule: #cfc8b8;
+  --color-mute: #6b665c;
+}
+
+body { margin: 0; background: var(--color-paper); color: var(--color-ink); font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
+select, input { border-radius: 0; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }

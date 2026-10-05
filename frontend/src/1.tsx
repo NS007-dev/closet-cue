@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-type Item = { id: number; image: string; category: string; type: string; colour: string; pattern: string; style: string; season: string; reviewed: number; status: string }
+type Item = { id: number; image: string; category: string; type: string; colour: string; pattern: string; style: string; season: string; reviewed: number }
 type Outfit = { item_ids: number[]; why: string; source: string }
 type Entry = { id: number; day: string; occasion: string; items: Item[] }
 type Hist = { today: string; entries: Entry[] }
@@ -196,9 +196,9 @@ function Wardrobe({ items, reload, build, go }: { items: Item[]; reload: () => v
       ) : (
         <div className="columns-2 gap-4">
           {shown.map(i => (
-            <button key={i.id} disabled={i.status === 'pending'} onClick={() => setOpen(i)} className={`rise mb-6 block w-full break-inside-avoid text-left ${i.status === 'pending' ? 'animate-pulse opacity-60' : ''}`}>
+            <button key={i.id} onClick={() => setOpen(i)} className="rise mb-6 block w-full break-inside-avoid text-left">
               <img src={img(i)} className="w-full" loading="lazy" />
-              <p className={label + ' mt-2 flex justify-between'}><span>No. {String(i.id).padStart(2, '0')}</span>{i.status === 'pending' ? <span className="text-oxblood">Reading…</span> : !i.reviewed && <span className="text-oxblood">Check</span>}</p>
+              <p className={label + ' mt-2 flex justify-between'}><span>No. {String(i.id).padStart(2, '0')}</span>{!i.reviewed && <span className="text-oxblood">Check</span>}</p>
               <p className="font-deck text-lg italic leading-tight text-mute">{i.colour} {i.type || i.category}</p>
             </button>
           ))}
@@ -214,11 +214,13 @@ function Add({ done }: { done: (ok: number, bad: string[]) => void }) {
   const [busy, setBusy] = useState('')
   const pick = async (files: FileList | null) => {
     if (!files?.length) return
-    const list = Array.from(files)
-    setBusy(`Uploading ${list.length} photo${list.length === 1 ? '' : 's'}…`)
-    const res = await Promise.allSettled(list.map(f => { const fd = new FormData(); fd.append('file', f); return api('/items', { method: 'POST', body: fd }) }))
-    const bad = res.flatMap(r => r.status === 'rejected' ? [(r.reason as Error).message] : [])
-    setBusy(''); done(res.length - bad.length, bad)
+    const list = Array.from(files); const bad: string[] = []; let ok = 0
+    for (let i = 0; i < list.length; i++) {
+      setBusy(`Reading piece ${i + 1} of ${list.length}…`)
+      const fd = new FormData(); fd.append('file', list[i])
+      try { await api('/items', { method: 'POST', body: fd }); ok++ } catch (e) { bad.push((e as Error).message) }
+    }
+    setBusy(''); done(ok, bad)
   }
   return (
     <div className="space-y-6">
@@ -278,14 +280,11 @@ export default function App() {
   const loadItems = useCallback(async () => setItems(await api<Item[]>('/items')), [])
   const loadHist = useCallback(async () => setHist(await api<Hist>('/history')), [])
   useEffect(() => {
-    api<{ ai: boolean }>('/health').then(h => setAiOn(h.ai)).catch(() => setAiOn(false))
-    const t = setTimeout(() => { setReady(true); setNote('The server is slow to answer. Check the backend terminal.') }, 8000)
-    Promise.all([loadItems(), loadHist(), api<Profile>('/profile').then(setProfile)])
-      .catch(() => setNote("Can't reach the ClosetCue server. Is the backend running?")).finally(() => { clearTimeout(t); setReady(true) })
+    Promise.all([loadItems(), loadHist(), api<Profile>('/profile').then(setProfile), api<{ ai: boolean }>('/health').then(h => setAiOn(h.ai))])
+      .catch(() => setNote("Can't reach the ClosetCue server. Is the backend running?")).finally(() => setReady(true))
   }, [loadItems, loadHist])
   useEffect(() => { if (note) { const t = setTimeout(() => setNote(''), 5000); return () => clearTimeout(t) } }, [note])
 
-  useEffect(() => { if (!items.some(i => i.status === 'pending')) return; const t = setTimeout(loadItems, 3000); return () => clearTimeout(t) }, [items, loadItems])
   const build = (i: Item) => { setAnchor(i); setTab('today') }
   const saveProfile = (p: Profile) => { setProfile(p); api('/profile', send('PUT', p)).catch(() => {}) }
   const tabs: [Tab, string][] = [['today', 'Today'], ['wardrobe', 'Closet'], ['add', '+ Add'], ['style', 'Style'], ['history', 'Archive']]
@@ -303,7 +302,7 @@ export default function App() {
       {!ready ? <p className="pt-24 text-center font-deck text-3xl italic">Going to press…</p> : <>
         {tab === 'today' && <Today items={items} hist={hist} anchor={anchor} setAnchor={setAnchor} reload={loadHist} aiOn={aiOn} />}
         {tab === 'wardrobe' && <Wardrobe items={items} reload={() => { loadItems(); loadHist() }} build={build} go={setTab} />}
-        {tab === 'add' && <Add done={async (ok, bad) => { await loadItems(); setNote(bad.length ? bad[0] : `${ok} photo${ok === 1 ? '' : 's'} uploaded. The AI is reading them now.`); if (ok) setTab('wardrobe') }} />}
+        {tab === 'add' && <Add done={async (ok, bad) => { await loadItems(); setNote(bad.length ? bad[0] : `${ok} piece${ok === 1 ? '' : 's'} added`); if (ok) setTab('wardrobe') }} />}
         {tab === 'style' && <StyleScreen profile={profile} save={saveProfile} />}
         {tab === 'history' && <History hist={hist} />}
       </>}
